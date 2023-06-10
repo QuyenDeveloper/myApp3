@@ -11,18 +11,24 @@ import {
   Image,
   Pressable,
   ScrollView,
+  Button,
 } from 'react-native';
 import COLORS from '../../consts/colors';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import houses from '../../consts/houses';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+
 const {width} = Dimensions.get('screen');
-const HomeScreen = ({navigation}) => {
+const PostedNew = ({navigation}) => {
   const optionsList = [
     {title: 'Buy a Home', img: require('../../assets/house1.jpg')},
     {title: 'Rent a Home', img: require('../../assets/house2.jpg')},
   ];
   const categoryList = ['Tất cả', 'Đề xuất', 'Gần đây'];
 
+  const BackFunctionHandeler = () => {
+    navigation.goBack();
+  };
   const ListCategories = () => {
     // List tab  ['Tất cả', 'Đề xuất', 'Gần đây'] ///////////////////
     const [selectedCategoryIndex, setSelectedCategoryIndex] = React.useState(0);
@@ -104,6 +110,40 @@ const HomeScreen = ({navigation}) => {
               </Text>
             </View>
           </View>
+          <View
+            style={{
+              flex: 1,
+              flexDirection: 'row',
+              justifyContent: 'center',
+              alignItems: 'flex-end',
+              marginTop: 20,
+            }}>
+            <View
+              style={{
+                flex: 5,
+                flexDirection: 'row',
+                alignItems: 'center',
+                alignItems: 'center',
+                height: 40,
+              }}>
+              <Text>Trạng thái: </Text>
+              <Text style={{fontWeight: 'bold', color: COLORS.red}}>
+                Chưa được duyệt
+              </Text>
+            </View>
+            <Pressable
+              style={({pressed}) => [
+                {backgroundColor: pressed ? COLORS.red : COLORS.green},
+                style.deleteButton,
+              ]}>
+              <Text
+                style={{
+                  color: COLORS.white,
+                }}>
+                Xóa
+              </Text>
+            </Pressable>
+          </View>
         </View>
       </Pressable>
     );
@@ -120,9 +160,18 @@ const HomeScreen = ({navigation}) => {
       />
       {/* Header container */}
       <View style={style.header}>
+        <View style={style.headerBtn}>
+          <Pressable>
+            <Icon
+              name="arrow-back-ios"
+              size={20}
+              onPress={BackFunctionHandeler}
+            />
+          </Pressable>
+        </View>
         <View>
           <Text style={{color: COLORS.dark, fontSize: 20, fontWeight: 'bold'}}>
-            Canada
+            Danh sách tin đăng
           </Text>
         </View>
         <Image
@@ -169,6 +218,23 @@ const HomeScreen = ({navigation}) => {
 };
 
 const style = StyleSheet.create({
+  headerBtn: {
+    height: 50,
+    width: 50,
+    backgroundColor: COLORS.white,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 50,
+    width: 40,
+    height: 40,
+  },
   header: {
     paddingTop: 50,
     paddingBottom: 15,
@@ -239,7 +305,7 @@ const style = StyleSheet.create({
     paddingHorizontal: 40,
   },
   card: {
-    height: 230,
+    flex: 1,
     backgroundColor: COLORS.white,
     elevation: 10,
     width: width - 40,
@@ -256,4 +322,5 @@ const style = StyleSheet.create({
   facility: {flexDirection: 'row', marginRight: 15},
   facilityText: {marginLeft: 5, color: COLORS.grey},
 });
-export default HomeScreen;
+
+export default PostedNew;

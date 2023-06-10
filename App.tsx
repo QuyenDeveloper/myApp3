@@ -6,8 +6,9 @@ import CustomDrawed from './src/components/CustomDrawed';
 import OnBoardScreen from './src/views/screens/OnBoardScreen';
 import HomeScreen from './src/views/screens/HomeScreen';
 import DetailsScreen from './src/views/screens/DetailsScreen';
-import ManageProfile from './src/views/screens/ManageProfile';
+import ManageProfile from './src/views/screens/ManageProfile.js';
 import About from './src/views/screens/About';
+import PostedNew from './src/views/screens/PostedNew';
 import PostNew from './src/views/screens/PostNew';
 import SavedNews from './src/views/screens/SavedNews';
 import LoginScreen from './src/views/screens/LoginScreen';
@@ -19,6 +20,7 @@ function App(): JSX.Element {
     <NavigationContainer>
       <Drawer.Navigator
         backBehavior="history"
+        // initialRouteName="PostNew"
         drawerContent={props => <CustomDrawed {...props} />}
         screenOptions={{headerShown: false, swipeEdgeWidth: 200}}>
         <Drawer.Screen
@@ -34,6 +36,7 @@ function App(): JSX.Element {
         />
         <Drawer.Screen name="ManageProfile" component={ManageProfile} />
         <Drawer.Screen name="PostNew" component={PostNew} />
+        <Drawer.Screen name="PostedNew" component={PostedNew} />
         <Drawer.Screen name="SavedNews" component={SavedNews} />
         <Drawer.Screen name="About" component={About} />
         <Drawer.Screen

@@ -1,239 +1,388 @@
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import {
-  SafeAreaView,
   View,
-  StatusBar,
   Text,
-  TextInput,
-  FlatList,
-  Dimensions,
   StyleSheet,
-  Image,
   Pressable,
-  ScrollView,
+  Image,
+  SafeAreaView,
+  StatusBar,
+  TextInput,
+  TouchableWithoutFeedback,
+  Keyboard,
   Button,
+  Dimensions,
+  TouchableOpacity,
+  PermissionsAndroid,
 } from 'react-native';
-import COLORS from '../../consts/colors';
+
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import houses from '../../consts/houses';
-import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
-
-const {width} = Dimensions.get('screen');
+import COLORS from '../../consts/colors';
+import {SelectList} from 'react-native-dropdown-select-list';
+import ImagePicker from 'react-native-image-crop-picker';
+import {ScrollView} from 'react-native-gesture-handler';
+import Swiper from 'react-native-swiper';
+import LinearGradient from 'react-native-linear-gradient';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import PORT from '../../consts/port';
+const {width, height} = Dimensions.get('window');
 const PostNew = ({navigation}) => {
-  const optionsList = [
-    {title: 'Buy a Home', img: require('../../assets/house1.jpg')},
-    {title: 'Rent a Home', img: require('../../assets/house2.jpg')},
-  ];
-  const categoryList = ['Tất cả', 'Đề xuất', 'Gần đây'];
+  const [sessionState, setSessionState] = useState('');
+  const [tieudeInputed, setTieudeInputed] = useState('');
+  const [diaChiChiTietInputed, setDiaChiTietInputed] = useState('');
+  const [dienTichInputed, setDienTichInputed] = useState('');
+  const [giaChoThueInputed, setGiaChoThueInputed] = useState('');
+  const [moTaInputed, setmoTaInputed] = useState('');
+  const [quanSelected, setQuanSelected] = useState('');
+  const [huyenSelected, setHuyenSelected] = useState('');
+  const [images, setImages] = useState([]);
+  const [quanData, setQuanData] = useState([]);
+  const [huyenData, setHuyenData] = useState([]);
+  const [filteredHuyenData, setfilteredHuyenData] = useState([]);
+  useEffect(() => {
+    fetchQuanData();
+    fetchHuyenData();
+    checkToken();
+  }, []);
+  const fetchQuanData = async () => {
+    try {
+      const response = await axios.get(`${PORT.BASE_URL}/api/getQuan`);
+      const formattedData = response.data.map(item => ({
+        key: item.district_id.toString(),
+        value: item.district_name,
+      }));
+      setQuanData(formattedData);
+    } catch (error) {
+      console.log('Error fetching data:', error);
+    }
+  };
+  const fetchHuyenData = async () => {
+    try {
+      const response = await axios.post(`${PORT.BASE_URL}/api/getHuyen`);
+      const formattedData = response.data.map(item => ({
+        key: item.ward_id.toString(),
+        value: item.ward,
+        district_id: item.district_id,
+      }));
+      setHuyenData(formattedData);
+    } catch (error) {
+      console.log('Error fetching data:', error);
+    }
+  };
+  const filterHuyenData = async () => {
+    try {
+      const filteredArray = huyenData.filter(
+        item => item.district_id === parseInt(quanSelected),
+      );
+      setfilteredHuyenData(filteredArray);
+    } catch (error) {
+      console.log('Error fetching data:', error);
+    }
+  };
+  const checkToken = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (token) {
+        setSessionState(token);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  const uploadImage = async () => {
+    const formData = new FormData();
+    images.map((image, index) => {
+      const filename = path.basename({uri: image.path});
+      formData.append('images[]', {
+        name: new Date() + filename,
+        uri: image.path,
+        type: 'image/jpg',
+      });
+    });
+    const res = await axios.post(
+      `${PORT.BASE_URL}/api/uploadImages`,
+      formData,
+      {
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'multipart/form-data',
+        },
+      },
+    );
+  };
+  const handleSubmit = async () => {
+    try {
+      const imagesUri = images.map(image => ({
+        uri: image.path,
+      }));
+      const token = await AsyncStorage.getItem('token');
+      const response = await axios.post(`${PORT.BASE_URL}/api/upload`, {
+        token,
+        tieudeInputed,
+        quanSelected,
+        huyenSelected,
+        diaChiChiTietInputed,
+        dienTichInputed,
+        giaChoThueInputed,
+        moTaInputed,
+        imagesUri,
+      });
 
+      if (response.data.success) {
+        uploadImage();
+        console.log('Data uploaded successfully');
+      } else {
+        // Data upload failed
+        console.log('Data upload failed');
+      }
+    } catch (error) {
+      // Error occurred during the request
+      console.log('Error uploading data:', error);
+    }
+  };
+
+  const chooseImage = async () => {
+    const options = {
+      multiple: true,
+      compressImageQuality: 0.3,
+      maxFiles: 4,
+      mediaType: 'photo',
+      includeBase64: true,
+    };
+    ImagePicker.openPicker(options).then(res => {
+      const selectedImages = res.slice(0, 4).map(image => ({
+        uri: image.path,
+      }));
+      setImages(selectedImages);
+      console.log(selectedImages);
+    });
+  };
   const BackFunctionHandeler = () => {
     navigation.goBack();
   };
-  const ListCategories = () => {
-    // List tab  ['Tất cả', 'Đề xuất', 'Gần đây'] ///////////////////
-    const [selectedCategoryIndex, setSelectedCategoryIndex] = React.useState(0);
-    return (
-      <View style={style.categoryListContainer}>
-        {categoryList.map(
-          (
-            category,
-            index, ////////////////Tab List///
-          ) => (
-            <Pressable
-              key={index}
-              onPress={() => setSelectedCategoryIndex(index)}>
-              <Text
-                style={[
-                  style.categoryListText,
-                  index == selectedCategoryIndex &&
-                    style.activeCategoryListText,
-                ]}>
-                {category}
-              </Text>
-            </Pressable>
-          ),
-        )}
-      </View>
-    );
-  };
-
-  const ListOptions = () => {
-    // CHo thuê or thue, chưa kahr dụng
-    return (
-      <View style={style.optionListsContainer}>
-        {optionsList.map((option, index) => (
-          <View style={style.optionsCard} key={index}>
-            {/* House image */}
-            <Image source={option.img} style={style.optionsCardImage} />
-
-            {/* Option title */}
-            <Text style={{marginTop: 10, fontSize: 18, fontWeight: 'bold'}}>
-              {option.title}
-            </Text>
-          </View>
-        ))}
-      </View>
-    );
-  };
-
-  const Card = ({house}) => {
-    ////////////////Tin đăng//////////////////////
-    return (
-      <Pressable
-        activeOpacity={0.8}
-        onPress={() => navigation.navigate('DetailsScreen', house)}>
-        <View style={style.card}>
-          {/* House image */}
-          <Image source={house.image} style={style.cardImage} />
-
-          <View style={{marginTop: 10}}>
-            {/* //Title text */}
-            <Text
-              style={{fontSize: 16, fontWeight: 'bold', color: COLORS.dark}}>
-              {house.title}
-            </Text>
-
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                marginTop: 10,
-              }}>
-              {/* Location text */}
-              <Text style={{color: COLORS.grey, fontSize: 14, marginTop: 5}}>
-                {house.location}
-              </Text>
-
-              <Text
-                style={{fontWeight: 'bold', color: COLORS.green, fontSize: 16}}>
-                {house.price} tr/Tháng
-              </Text>
-            </View>
-          </View>
-          <View
-            style={{
-              flex: 1,
-              flexDirection: 'row',
-              justifyContent: 'center',
-              alignItems: 'flex-end',
-              marginTop: 20,
-            }}>
-            <View
-              style={{
-                flex: 5,
-                flexDirection: 'row',
-                alignItems: 'center',
-                alignItems: 'center',
-                height: 40,
-              }}>
-              <Text>Trạng thái: </Text>
-              <Text style={{fontWeight: 'bold', color: COLORS.red}}>
-                Chưa được duyệt
-              </Text>
-            </View>
-            <Pressable
-              style={({pressed}) => [
-                {backgroundColor: pressed ? COLORS.red : COLORS.green},
-                style.deleteButton,
-              ]}>
-              <Text
-                style={{
-                  color: COLORS.white,
-                }}>
-                Xóa
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-      </Pressable>
-    );
-  };
-
-  //////////////////////////////////////////////Mainn///////////////////////////////////////////////////////
   return (
-    <SafeAreaView style={{backgroundColor: COLORS.white, flex: 1}}>
-      {/* Customise status bar */}
-      <StatusBar
-        translucent={false}
-        backgroundColor={COLORS.white}
-        barStyle="dark-content"
-      />
-      {/* Header container */}
-      <View style={style.header}>
-        <View style={style.headerBtn}>
-          <Pressable>
-            <Icon
-              name="arrow-back-ios"
-              size={20}
-              onPress={BackFunctionHandeler}
-            />
-          </Pressable>
-        </View>
-        <View>
-          <Text style={{color: COLORS.dark, fontSize: 20, fontWeight: 'bold'}}>
-            Danh sách tin đăng
-          </Text>
-        </View>
-        <Image
-          style={style.profileImage}
-          source={require('../../assets/avatars/1.jpg')}
-        />
-      </View>
-      <View style={{flex: 1}}>
-        {/* Input and sort button container */}
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            paddingHorizontal: 20,
-          }}>
-          <View style={style.searchInputContainer}>
-            <Icon name="search" color={COLORS.green} size={25} />
-            <TextInput
-              placeholder="Search address, city, location"
-              placeholderTextColor={COLORS.grey}
+    <TouchableWithoutFeedback
+      onPress={() => Keyboard.dismiss()}
+      accessible={false}>
+      <ScrollView style={{backgroundColor: COLORS.white}}>
+        <SafeAreaView style={{backgroundColor: COLORS.white, flex: 1}}>
+          {/* Customise status bar */}
+          <StatusBar
+            translucent={false}
+            backgroundColor={COLORS.white}
+            barStyle="dark-content"
+          />
+          {/* Header container */}
+          <View style={styles.header}>
+            <View style={styles.headerBtn}>
+              <Pressable>
+                <Icon
+                  name="arrow-back-ios"
+                  size={20}
+                  onPress={BackFunctionHandeler}
+                />
+              </Pressable>
+            </View>
+            <View>
+              <Text
+                style={{color: COLORS.dark, fontSize: 20, fontWeight: 'bold'}}>
+                Đăng tin
+              </Text>
+            </View>
+            <Image
+              style={styles.profileImage}
+              source={require('../../assets/avatars/1.jpg')}
             />
           </View>
 
-          <View style={style.sortBtn}>
-            <Icon name="tune" color={COLORS.white} size={25} />
+          <View style={{paddingLeft: 25, paddingRight: 25}}>
+            <View>
+              <Text>Tiêu đề</Text>
+              <TextInput
+                placeholder="Tiêu đề"
+                style={styles.textInputBorder}
+                value={tieudeInputed}
+                onChangeText={setTieudeInputed}
+              />
+            </View>
+            <View style={{flexDirection: 'row'}}>
+              <View style={{flex: 1}}>
+                <Text
+                  style={{
+                    textAlign: 'center',
+                  }}>
+                  Quận
+                </Text>
+                <SelectList
+                  data={quanData}
+                  setSelected={setQuanSelected}
+                  boxStyles={{
+                    width: 150,
+                    borderColor: COLORS.green,
+                    marginTop: 10,
+                    marginBottom: 10,
+                    borderWidth: 2,
+                  }}
+                  onSelect={() => filterHuyenData()}
+                  placeholder="Chọn Quận"
+                />
+              </View>
+              <View style={{flex: 1}}>
+                <Text
+                  style={{
+                    textAlign: 'center',
+                  }}>
+                  Huyện
+                </Text>
+                <SelectList
+                  data={filteredHuyenData}
+                  setSelected={setHuyenSelected}
+                  boxStyles={{
+                    width: 150,
+                    borderColor: COLORS.green,
+                    marginTop: 10,
+                    marginBottom: 10,
+                    borderWidth: 2,
+                  }}
+                  placeholder="Chọn Huyện"
+                />
+              </View>
+            </View>
+            <View>
+              <Text>Địa chỉ chi tiết</Text>
+              <TextInput
+                placeholder="Địa chỉ chi tiết"
+                style={styles.textInputBorder}
+                value={diaChiChiTietInputed}
+                onChangeText={setDiaChiTietInputed}
+              />
+            </View>
+            <View style={{flexDirection: 'row'}}>
+              <View style={{flex: 1}}>
+                <Text
+                  style={{
+                    textAlign: 'center',
+                  }}>
+                  Diện tích
+                </Text>
+                <TextInput
+                  style={styles.textInputBorder}
+                  placeholder="Dien tich"
+                  value={dienTichInputed}
+                  onChangeText={setDienTichInputed}
+                />
+              </View>
+              <View style={{flex: 1, marginLeft: 5}}>
+                <Text
+                  style={{
+                    textAlign: 'center',
+                  }}>
+                  Giá cho thuê
+                </Text>
+                <TextInput
+                  style={styles.textInputBorder}
+                  placeholder="Gia cho thue"
+                  value={giaChoThueInputed}
+                  onChangeText={setGiaChoThueInputed}
+                />
+              </View>
+            </View>
+            <View>
+              <Text>Mô tả</Text>
+              <TextInput
+                style={[styles.textInputBorder, {height: 150}]}
+                placeholder="Mô tả"
+                value={moTaInputed}
+                onChangeText={setmoTaInputed}
+              />
+            </View>
+            <View>
+              <Text>Chọn ảnh</Text>
+              <TouchableOpacity onPress={chooseImage} style={styles.button}>
+                {images.length > 0 ? (
+                  <Swiper loop={false} style={styles.swiper}>
+                    {/* Display all images */}
+                    {images.map((image, index) => (
+                      <Image key={index} source={image} style={styles.image} />
+                    ))}
+                  </Swiper>
+                ) : (
+                  <Text style={[styles.text, styles.textInputBorder]}>
+                    Chọn ảnh
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+            <View style={styles.submitBtnWrap}>
+              <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
+                <LinearGradient
+                  colors={['#0FA914', '#6DF755']}
+                  style={styles.linearGradient}
+                  useAngle={true}
+                  angle={45}>
+                  <Text style={styles.submitBtnInner}>Đăng</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-
-        <ListCategories />
-
-        {/* Render Card */}
-
-        <FlatList
-          snapToInterval={width - 20}
-          contentContainerStyle={{paddingLeft: 20, paddingVertical: 20}}
-          data={houses}
-          renderItem={({item}) => <Card house={item} />}
-          flexGrow={1}
-          flexShrink={1}
-        />
-      </View>
-    </SafeAreaView>
+        </SafeAreaView>
+      </ScrollView>
+    </TouchableWithoutFeedback>
   );
 };
 
-const style = StyleSheet.create({
-  headerBtn: {
-    height: 50,
-    width: 50,
-    backgroundColor: COLORS.white,
-    borderRadius: 15,
+const styles = StyleSheet.create({
+  linearGradient: {
+    padding: 10,
+    borderRadius: 50,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  deleteButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+  submitBtn: {
+    width: '90%',
+  },
+  submitBtnInner: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  submitBtnWrap: {
     justifyContent: 'center',
-    borderRadius: 50,
-    width: 40,
-    height: 40,
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  submitButton: {
+    flex: 1,
+    backgroundColor: COLORS.primary,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginTop: 20,
+    alignSelf: 'center',
+  },
+  submitButtonText: {
+    color: COLORS.black,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  textInputBorder: {
+    marginTop: 10,
+    marginBottom: 10,
+    borderWidth: 2,
+    borderRadius: 10,
+    padding: 10,
+    borderColor: COLORS.green,
+  },
+  swiper: {
+    marginTop: 10,
+    marginBottom: 10,
+    height: 200,
+  },
+  image: {
+    flex: 1,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: COLORS.black,
   },
   header: {
     paddingTop: 50,
@@ -242,85 +391,19 @@ const style = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
   },
+  headerBtn: {
+    height: 50,
+    width: 50,
+    backgroundColor: COLORS.white,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   profileImage: {
     height: 50,
     width: 50,
     borderRadius: 25,
   },
-  searchInputContainer: {
-    height: 50,
-    backgroundColor: COLORS.light,
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    borderRadius: 12,
-  },
-  sortBtn: {
-    backgroundColor: COLORS.green,
-    height: 50,
-    width: 50,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 10,
-  },
-  optionsCard: {
-    height: 210,
-    width: width / 2 - 30,
-    elevation: 15,
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: 20,
-    paddingTop: 10,
-    paddingHorizontal: 10,
-  },
-  optionsCardImage: {
-    height: 140,
-    borderRadius: 10,
-    width: '100%',
-  },
-  optionListsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 20,
-    paddingHorizontal: 20,
-  },
-  categoryListText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    paddingBottom: 5,
-    color: COLORS.grey,
-  },
-  activeCategoryListText: {
-    ///////////// khi tab list được nhân vao//////////
-    color: COLORS.dark,
-    borderBottomWidth: 1,
-    paddingBottom: 5,
-  },
-  categoryListContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: 15,
-    paddingHorizontal: 40,
-  },
-  card: {
-    flex: 1,
-    backgroundColor: COLORS.white,
-    elevation: 10,
-    width: width - 40,
-    marginRight: 20,
-    marginBottom: 5,
-    padding: 15,
-    borderRadius: 20,
-  },
-  cardImage: {
-    width: '100%',
-    height: 120,
-    borderRadius: 15,
-  },
-  facility: {flexDirection: 'row', marginRight: 15},
-  facilityText: {marginLeft: 5, color: COLORS.grey},
 });
 
 export default PostNew;

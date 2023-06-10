@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -7,16 +7,52 @@ import {
   Keyboard,
   TouchableOpacity,
   TextInput,
+  Alert,
 } from 'react-native';
-import {NavigationContainer, useNavigation} from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import PORT from '../../consts/port';
+const BASE_URL = 'http://192.168.1.24:3000';
 
-const LoginPage = () => {
+const LoginPage = ({onLoginSuccess}) => {
   const navigation = useNavigation();
   const RegisterBtn = () => {
     navigation.navigate('RegisterScreen');
   };
+
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleLogin = async () => {
+    if (username.trim() === '' || password.trim() === '') {
+      Alert.alert('Login Failed', 'Please enter both username and password');
+      return;
+    }
+    try {
+      const response = await axios.post(`${PORT.BASE_URL}/api/login`, {
+        username,
+        password,
+      });
+      if (response.data.success) {
+        const token = response.data.token;
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        // Store the token securely
+        await AsyncStorage.setItem('token', token);
+        // Call the onLoginSuccess function or navigate to the desired screen
+        onLoginSuccess({token});
+      } else {
+        // Display error message if login fails
+        Alert.alert('Login Failed', 'Invalid username or password');
+      }
+    } catch (error) {
+      console.log(error);
+      Alert.alert('Error', 'An error occurred during login' + error.message);
+    }
+  };
+
   return (
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
       <View style={styles.outerViewContainer}>
@@ -37,6 +73,8 @@ const LoginPage = () => {
                   <TextInput
                     placeholder="Nhập tên tài khoản"
                     style={{flex: 1}}
+                    value={username}
+                    onChangeText={text => setUsername(text)}
                   />
                 </View>
               </View>
@@ -49,6 +87,8 @@ const LoginPage = () => {
                   <TextInput
                     placeholder="Nhập mật khẩu"
                     style={{flex: 1}}
+                    value={password}
+                    onChangeText={text => setPassword(text)}
                     secureTextEntry
                   />
                 </View>
@@ -63,7 +103,7 @@ const LoginPage = () => {
             <View style={styles.bodyBottom}>
               {/* nut dang nhap */}
               <View style={styles.loginBtnWrap}>
-                <TouchableOpacity style={styles.loginBtn}>
+                <TouchableOpacity style={styles.loginBtn} onPress={handleLogin}>
                   <LinearGradient
                     colors={['#0FA914', '#6DF755']}
                     style={styles.linearGradient}
@@ -102,6 +142,7 @@ const LoginPage = () => {
     </TouchableWithoutFeedback>
   );
 };
+
 const styles = StyleSheet.create({
   outerViewContainer: {
     flex: 1,
