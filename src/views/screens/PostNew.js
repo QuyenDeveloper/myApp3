@@ -19,11 +19,13 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import COLORS from '../../consts/colors';
 import {SelectList} from 'react-native-dropdown-select-list';
-import ImagePicker from 'react-native-image-crop-picker';
+// import ImagePicker from 'react-native-image-crop-picker';
+import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import {ScrollView} from 'react-native-gesture-handler';
 import Swiper from 'react-native-swiper';
 import LinearGradient from 'react-native-linear-gradient';
 import axios from 'axios';
+const path = require('path');
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PORT from '../../consts/port';
 const {width, height} = Dimensions.get('window');
@@ -36,15 +38,24 @@ const PostNew = ({navigation}) => {
   const [moTaInputed, setmoTaInputed] = useState('');
   const [quanSelected, setQuanSelected] = useState('');
   const [huyenSelected, setHuyenSelected] = useState('');
-  const [images, setImages] = useState([]);
+  const [images, setImages] = useState('');
   const [quanData, setQuanData] = useState([]);
   const [huyenData, setHuyenData] = useState([]);
   const [filteredHuyenData, setfilteredHuyenData] = useState([]);
   useEffect(() => {
+    checkToken();
     fetchQuanData();
     fetchHuyenData();
-    checkToken();
   }, []);
+
+  const checkToken = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      setSessionState(token);
+    } catch (error) {
+      console.log(error);
+    }
+  };
   const fetchQuanData = async () => {
     try {
       const response = await axios.get(`${PORT.BASE_URL}/api/getQuan`);
@@ -80,67 +91,6 @@ const PostNew = ({navigation}) => {
       console.log('Error fetching data:', error);
     }
   };
-  const checkToken = async () => {
-    try {
-      const token = await AsyncStorage.getItem('token');
-      if (token) {
-        setSessionState(token);
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  };
-  const uploadImage = async () => {
-    const formData = new FormData();
-    images.map((image, index) => {
-      const filename = path.basename({uri: image.path});
-      formData.append('images[]', {
-        name: new Date() + filename,
-        uri: image.path,
-        type: 'image/jpg',
-      });
-    });
-    const res = await axios.post(
-      `${PORT.BASE_URL}/api/uploadImages`,
-      formData,
-      {
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'multipart/form-data',
-        },
-      },
-    );
-  };
-  const handleSubmit = async () => {
-    try {
-      const imagesUri = images.map(image => ({
-        uri: image.path,
-      }));
-      const token = await AsyncStorage.getItem('token');
-      const response = await axios.post(`${PORT.BASE_URL}/api/upload`, {
-        token,
-        tieudeInputed,
-        quanSelected,
-        huyenSelected,
-        diaChiChiTietInputed,
-        dienTichInputed,
-        giaChoThueInputed,
-        moTaInputed,
-        imagesUri,
-      });
-
-      if (response.data.success) {
-        uploadImage();
-        console.log('Data uploaded successfully');
-      } else {
-        // Data upload failed
-        console.log('Data upload failed');
-      }
-    } catch (error) {
-      // Error occurred during the request
-      console.log('Error uploading data:', error);
-    }
-  };
 
   const chooseImage = async () => {
     const options = {
@@ -150,14 +100,92 @@ const PostNew = ({navigation}) => {
       mediaType: 'photo',
       includeBase64: true,
     };
-    ImagePicker.openPicker(options).then(res => {
-      const selectedImages = res.slice(0, 4).map(image => ({
-        uri: image.path,
-      }));
+    const result = await launchImageLibrary(options);
+    if (!result.didCancel && !result.error) {
+      const selectedImages = result.assets.map(asset => asset.uri);
       setImages(selectedImages);
       console.log(selectedImages);
-    });
+    }
   };
+  const uploadImages = async () => {
+    // Create a new FormData object
+    const token = await AsyncStorage.getItem('token');
+    const formData = new FormData();
+    // Append each image to the formData object
+    images.map((uri, index) =>
+      formData.append('image', {
+        uri: uri,
+        type: 'image/jpeg', // Adjust the file type according to your needs
+        name: `image${index + 1}.jpg`, // Adjust the file name according to your needs
+      }),
+    );
+
+    try {
+      const response = await axios.post(
+        `${PORT.BASE_URL}/api/uploadImages`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        },
+      );
+      // Handle the server response
+      console.log(response.data);
+    } catch (error) {
+      // Handle the error
+      console.log(error);
+    }
+  };
+  const handleSubmit = async () => {
+    const token = await AsyncStorage.getItem('token');
+    if (token) {
+      const formData = new FormData();
+      // Append each image to the formData object
+      images.forEach((uri, index) => {
+        const imageName = path.basename(uri);
+        const image = {
+          uri: uri,
+          type: 'image/jpeg',
+          name: imageName,
+        };
+        formData.append('image', image);
+      });
+
+      // Append other form data to the formData object
+      formData.append('tieude', tieudeInputed);
+      formData.append('diachi', diaChiChiTietInputed);
+      formData.append('dientich', dienTichInputed);
+      formData.append('giachothue', giaChoThueInputed);
+      formData.append('mota', moTaInputed);
+      formData.append('quan', quanSelected);
+      formData.append('huyen', huyenSelected);
+
+      try {
+        const response = await axios.post(
+          `${PORT.BASE_URL}/api/upload`,
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+        // Handle the server response
+        console.log(response.data);
+      } catch (error) {
+        // Handle the error
+        console.log(error);
+      }
+      console.log('Submit form');
+    } else {
+      // User is not logged in, display an alert or show a message
+      Alert.alert('Not allowed', 'Please log in to submit the form.');
+    }
+  };
+
   const BackFunctionHandeler = () => {
     navigation.goBack();
   };
@@ -300,13 +328,14 @@ const PostNew = ({navigation}) => {
             <View>
               <Text>Chọn ảnh</Text>
               <TouchableOpacity onPress={chooseImage} style={styles.button}>
-                {images.length > 0 ? (
-                  <Swiper loop={false} style={styles.swiper}>
-                    {/* Display all images */}
-                    {images.map((image, index) => (
-                      <Image key={index} source={image} style={styles.image} />
-                    ))}
-                  </Swiper>
+                {images != '' ? (
+                  images.map((uri, index) => (
+                    <Image
+                      key={index}
+                      source={{uri: uri}}
+                      style={styles.image}
+                    />
+                  ))
                 ) : (
                   <Text style={[styles.text, styles.textInputBorder]}>
                     Chọn ảnh
@@ -380,7 +409,9 @@ const styles = StyleSheet.create({
   },
   image: {
     flex: 1,
-    width: '100%',
+    marginTop: 10,
+    marginBottom: 10,
+    height: 200,
     borderWidth: 1,
     borderColor: COLORS.black,
   },
