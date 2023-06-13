@@ -11,9 +11,9 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Button,
+  Alert,
   Dimensions,
   TouchableOpacity,
-  PermissionsAndroid,
 } from 'react-native';
 
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -22,7 +22,6 @@ import {SelectList} from 'react-native-dropdown-select-list';
 // import ImagePicker from 'react-native-image-crop-picker';
 import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import {ScrollView} from 'react-native-gesture-handler';
-import Swiper from 'react-native-swiper';
 import LinearGradient from 'react-native-linear-gradient';
 import axios from 'axios';
 const path = require('path');
@@ -107,37 +106,6 @@ const PostNew = ({navigation}) => {
       console.log(selectedImages);
     }
   };
-  const uploadImages = async () => {
-    // Create a new FormData object
-    const token = await AsyncStorage.getItem('token');
-    const formData = new FormData();
-    // Append each image to the formData object
-    images.map((uri, index) =>
-      formData.append('image', {
-        uri: uri,
-        type: 'image/jpeg', // Adjust the file type according to your needs
-        name: `image${index + 1}.jpg`, // Adjust the file name according to your needs
-      }),
-    );
-
-    try {
-      const response = await axios.post(
-        `${PORT.BASE_URL}/api/uploadImages`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        },
-      );
-      // Handle the server response
-      console.log(response.data);
-    } catch (error) {
-      // Handle the error
-      console.log(error);
-    }
-  };
   const handleSubmit = async () => {
     const token = await AsyncStorage.getItem('token');
     if (token) {
@@ -173,15 +141,12 @@ const PostNew = ({navigation}) => {
             },
           },
         );
-        // Handle the server response
         console.log(response.data);
       } catch (error) {
-        // Handle the error
         console.log(error);
       }
       console.log('Submit form');
     } else {
-      // User is not logged in, display an alert or show a message
       Alert.alert('Not allowed', 'Please log in to submit the form.');
     }
   };

@@ -157,7 +157,7 @@ const SavedNews = ({navigation}) => {
         </View>
         <View>
           <Text style={{color: COLORS.dark, fontSize: 20, fontWeight: 'bold'}}>
-            Danh sách tin đăng
+            Danh sách tin lưu
           </Text>
         </View>
         <Image
@@ -176,7 +176,7 @@ const SavedNews = ({navigation}) => {
           <View style={style.searchInputContainer}>
             <Icon name="search" color={COLORS.green} size={25} />
             <TextInput
-              placeholder="Search address, city, location"
+              placeholder="Tìm kiếm địa chỉ, quận, phường"
               placeholderTextColor={COLORS.grey}
             />
           </View>
@@ -186,7 +186,7 @@ const SavedNews = ({navigation}) => {
           </View>
         </View>
 
-        <ListCategories />
+        {/* <ListCategories /> */}
 
         {/* Render Card */}
 

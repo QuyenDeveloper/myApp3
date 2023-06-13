@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   SafeAreaView,
   View,
@@ -11,12 +11,35 @@ import {
   Image,
   Pressable,
   ScrollView,
+  RefreshControl,
 } from 'react-native';
 import COLORS from '../../consts/colors';
+import axios from 'axios';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import houses from '../../consts/houses';
+import PORT from '../../consts/port';
 const {width} = Dimensions.get('screen');
 const HomeScreen = ({navigation}) => {
+  const [postList, setPostList] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+  useEffect(() => {
+    retrievePosts();
+  }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    retrievePosts();
+    setRefreshing(false);
+  };
+
+  const retrievePosts = async () => {
+    try {
+      const response = await axios.get(`${PORT.BASE_URL}/api/getPost`);
+      setPostList(response.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
   const optionsList = [
     {title: 'Buy a Home', img: require('../../assets/house1.jpg')},
     {title: 'Rent a Home', img: require('../../assets/house2.jpg')},
@@ -25,7 +48,7 @@ const HomeScreen = ({navigation}) => {
 
   const ListCategories = () => {
     // List tab  ['Tất cả', 'Đề xuất', 'Gần đây'] ///////////////////
-    const [selectedCategoryIndex, setSelectedCategoryIndex] = React.useState(0);
+    const [selectedCategoryIndex, setSelectedCategoryIndex] = useState(0);
     return (
       <View style={style.categoryListContainer}>
         {categoryList.map(
@@ -78,13 +101,18 @@ const HomeScreen = ({navigation}) => {
         onPress={() => navigation.navigate('DetailsScreen', house)}>
         <View style={style.card}>
           {/* House image */}
-          <Image source={house.image} style={style.cardImage} />
+          <Image
+            source={{
+              uri: `${PORT.BASE_URL}/api/getImage/` + house.img,
+            }}
+            style={style.cardImage}
+          />
 
           <View style={{marginTop: 10}}>
             {/* //Title text */}
             <Text
               style={{fontSize: 16, fontWeight: 'bold', color: COLORS.dark}}>
-              {house.title}
+              {house.prd_title}
             </Text>
 
             <View
@@ -95,14 +123,13 @@ const HomeScreen = ({navigation}) => {
               }}>
               {/* Location text */}
               <Text style={{color: COLORS.grey, fontSize: 14, marginTop: 5}}>
-                {house.location}
-              </Text>
-
-              <Text
-                style={{fontWeight: 'bold', color: COLORS.green, fontSize: 16}}>
-                {house.price} tr/Tháng
+                {house.ward + ', ' + house.district_name}
               </Text>
             </View>
+            <Text
+              style={{fontWeight: 'bold', color: COLORS.green, fontSize: 16}}>
+              {house.price.toLocaleString()} VND/Tháng
+            </Text>
           </View>
         </View>
       </Pressable>
@@ -122,7 +149,7 @@ const HomeScreen = ({navigation}) => {
       <View style={style.header}>
         <View>
           <Text style={{color: COLORS.dark, fontSize: 20, fontWeight: 'bold'}}>
-            Canada
+            Đà Nẵng
           </Text>
         </View>
         <Image
@@ -141,7 +168,7 @@ const HomeScreen = ({navigation}) => {
           <View style={style.searchInputContainer}>
             <Icon name="search" color={COLORS.green} size={25} />
             <TextInput
-              placeholder="Search address, city, location"
+              placeholder="Tìm kiếm địa chỉ, quận, phường"
               placeholderTextColor={COLORS.grey}
             />
           </View>
@@ -151,14 +178,17 @@ const HomeScreen = ({navigation}) => {
           </View>
         </View>
 
-        <ListCategories />
+        {/* <ListCategories /> */}
 
         {/* Render Card */}
 
         <FlatList
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
           snapToInterval={width - 20}
           contentContainerStyle={{paddingLeft: 20, paddingVertical: 20}}
-          data={houses}
+          data={postList}
           renderItem={({item}) => <Card house={item} />}
           flexGrow={1}
           flexShrink={1}
@@ -239,7 +269,6 @@ const style = StyleSheet.create({
     paddingHorizontal: 40,
   },
   card: {
-    height: 230,
     backgroundColor: COLORS.white,
     elevation: 10,
     width: width - 40,

@@ -15,7 +15,6 @@ import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PORT from '../../consts/port';
-const BASE_URL = 'http://192.168.1.24:3000';
 
 const LoginPage = ({onLoginSuccess}) => {
   const navigation = useNavigation();
@@ -36,6 +35,7 @@ const LoginPage = ({onLoginSuccess}) => {
         username,
         password,
       });
+      console.log(response.data);
       if (response.data.success) {
         const token = response.data.token;
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;

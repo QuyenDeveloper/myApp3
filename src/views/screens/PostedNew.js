@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   SafeAreaView,
   View,
@@ -12,14 +12,52 @@ import {
   Pressable,
   ScrollView,
   Button,
+  RefreshControl,
 } from 'react-native';
 import COLORS from '../../consts/colors';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import houses from '../../consts/houses';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import axios from 'axios';
+import PORT from '../../consts/port';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const {width} = Dimensions.get('screen');
 const PostedNew = ({navigation}) => {
+  const [postList, setPostList] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+  useEffect(() => {
+    retrievePosts();
+  }, []);
+  const onRefresh = () => {
+    setRefreshing(true);
+    retrievePosts();
+    setRefreshing(false);
+  };
+  const retrievePosts = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const response = await axios.get(`${PORT.BASE_URL}/api/getPostedPost`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setPostList(response.data);
+    } catch (error) {
+      console.log(error + 'here');
+    }
+  };
+
+  const deletePost = async prd_id => {
+    try {
+      const response = await axios.get(
+        `${PORT.BASE_URL}/api/deletePostedPost?prd_id=${prd_id}`,
+      );
+      retrievePosts();
+    } catch (error) {
+      console.log(error);
+    }
+  };
   const optionsList = [
     {title: 'Buy a Home', img: require('../../assets/house1.jpg')},
     {title: 'Rent a Home', img: require('../../assets/house2.jpg')},
@@ -30,7 +68,6 @@ const PostedNew = ({navigation}) => {
     navigation.goBack();
   };
   const ListCategories = () => {
-    // List tab  ['Tất cả', 'Đề xuất', 'Gần đây'] ///////////////////
     const [selectedCategoryIndex, setSelectedCategoryIndex] = React.useState(0);
     return (
       <View style={style.categoryListContainer}>
@@ -84,13 +121,16 @@ const PostedNew = ({navigation}) => {
         onPress={() => navigation.navigate('DetailsScreen', house)}>
         <View style={style.card}>
           {/* House image */}
-          <Image source={house.image} style={style.cardImage} />
+          <Image
+            source={{uri: `${PORT.BASE_URL}/api/getImage/` + house.img}}
+            style={style.cardImage}
+          />
 
           <View style={{marginTop: 10}}>
             {/* //Title text */}
             <Text
               style={{fontSize: 16, fontWeight: 'bold', color: COLORS.dark}}>
-              {house.title}
+              {house.prd_title}
             </Text>
 
             <View
@@ -101,14 +141,13 @@ const PostedNew = ({navigation}) => {
               }}>
               {/* Location text */}
               <Text style={{color: COLORS.grey, fontSize: 14, marginTop: 5}}>
-                {house.location}
-              </Text>
-
-              <Text
-                style={{fontWeight: 'bold', color: COLORS.green, fontSize: 16}}>
-                {house.price} tr/Tháng
+                {house.ward + ', ' + house.district_name}
               </Text>
             </View>
+            <Text
+              style={{fontWeight: 'bold', color: COLORS.green, fontSize: 16}}>
+              {house.price.toLocaleString()} VND/Tháng
+            </Text>
           </View>
           <View
             style={{
@@ -127,21 +166,23 @@ const PostedNew = ({navigation}) => {
                 height: 40,
               }}>
               <Text>Trạng thái: </Text>
-              <Text style={{fontWeight: 'bold', color: COLORS.red}}>
-                Chưa được duyệt
-              </Text>
+              {house.prd_status === 2 ? (
+                <Text style={{fontWeight: 'bold', color: COLORS.green}}>
+                  Đã duyệt
+                </Text>
+              ) : (
+                <Text style={{fontWeight: 'bold', color: COLORS.red}}>
+                  Chưa được duyệt
+                </Text>
+              )}
             </View>
             <Pressable
+              onPress={() => deletePost(house.prd_id)}
               style={({pressed}) => [
                 {backgroundColor: pressed ? COLORS.red : COLORS.green},
                 style.deleteButton,
               ]}>
-              <Text
-                style={{
-                  color: COLORS.white,
-                }}>
-                Xóa
-              </Text>
+              <Text style={{color: COLORS.white}}>Xóa</Text>
             </Pressable>
           </View>
         </View>
@@ -171,7 +212,7 @@ const PostedNew = ({navigation}) => {
         </View>
         <View>
           <Text style={{color: COLORS.dark, fontSize: 20, fontWeight: 'bold'}}>
-            Danh sách tin đăng
+            Danh sách đã đăng
           </Text>
         </View>
         <Image
@@ -190,7 +231,7 @@ const PostedNew = ({navigation}) => {
           <View style={style.searchInputContainer}>
             <Icon name="search" color={COLORS.green} size={25} />
             <TextInput
-              placeholder="Search address, city, location"
+              placeholder="Tìm kiếm địa chỉ, quận, phường"
               placeholderTextColor={COLORS.grey}
             />
           </View>
@@ -200,14 +241,17 @@ const PostedNew = ({navigation}) => {
           </View>
         </View>
 
-        <ListCategories />
+        {/* <ListCategories /> */}
 
         {/* Render Card */}
 
         <FlatList
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
           snapToInterval={width - 20}
           contentContainerStyle={{paddingLeft: 20, paddingVertical: 20}}
-          data={houses}
+          data={postList}
           renderItem={({item}) => <Card house={item} />}
           flexGrow={1}
           flexShrink={1}

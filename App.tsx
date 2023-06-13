@@ -1,7 +1,8 @@
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {DrawerItem, createDrawerNavigator} from '@react-navigation/drawer';
-
+import {PermissionsAndroid, Platform} from 'react-native';
+import {request, PERMISSIONS} from 'react-native-permissions';
 import CustomDrawed from './src/components/CustomDrawed';
 import OnBoardScreen from './src/views/screens/OnBoardScreen';
 import HomeScreen from './src/views/screens/HomeScreen';
@@ -28,17 +29,17 @@ function App(): JSX.Element {
           component={OnBoardScreen}
           options={{drawerItemStyle: {display: 'none'}}}
         />
-        <Drawer.Screen name="HomeScreen" component={HomeScreen} />
+        <Drawer.Screen name="Trang chủ" component={HomeScreen} />
         <Drawer.Screen
           name="DetailsScreen"
           component={DetailsScreen}
           options={{drawerItemStyle: {display: 'none'}}}
         />
-        <Drawer.Screen name="ManageProfile" component={ManageProfile} />
-        <Drawer.Screen name="PostNew" component={PostNew} />
-        <Drawer.Screen name="PostedNew" component={PostedNew} />
-        <Drawer.Screen name="SavedNews" component={SavedNews} />
-        <Drawer.Screen name="About" component={About} />
+        <Drawer.Screen name="Thông tin cá nhân" component={ManageProfile} />
+        <Drawer.Screen name="Đăng tin" component={PostNew} />
+        <Drawer.Screen name="Tin đã đăng" component={PostedNew} />
+        <Drawer.Screen name="Tin lưu" component={SavedNews} />
+        {/* <Drawer.Screen name="About" component={About} /> */}
         <Drawer.Screen
           name="LoginScreen"
           component={LoginScreen}
