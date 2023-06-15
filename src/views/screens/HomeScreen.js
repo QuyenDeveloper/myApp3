@@ -22,9 +22,17 @@ const {width} = Dimensions.get('screen');
 const HomeScreen = ({navigation}) => {
   const [postList, setPostList] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [inputText, setInputText] = useState('');
+  const [sortedData, setSortedData] = useState(postList);
   useEffect(() => {
     retrievePosts();
   }, []);
+  useEffect(() => {
+    const filteredData = postList.filter(item => {
+      return item.prd_title.toLowerCase().includes(inputText.toLowerCase());
+    });
+    setSortedData(filteredData);
+  }, [inputText, postList]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -170,12 +178,13 @@ const HomeScreen = ({navigation}) => {
             <TextInput
               placeholder="Tìm kiếm địa chỉ, quận, phường"
               placeholderTextColor={COLORS.grey}
+              onChangeText={text => setInputText(text)}
             />
           </View>
 
-          <View style={style.sortBtn}>
+          {/* <View style={style.sortBtn}>
             <Icon name="tune" color={COLORS.white} size={25} />
-          </View>
+          </View> */}
         </View>
 
         {/* <ListCategories /> */}
@@ -188,7 +197,7 @@ const HomeScreen = ({navigation}) => {
           }
           snapToInterval={width - 20}
           contentContainerStyle={{paddingLeft: 20, paddingVertical: 20}}
-          data={postList}
+          data={sortedData} // Use sortedData instead of postList
           renderItem={({item}) => <Card house={item} />}
           flexGrow={1}
           flexShrink={1}

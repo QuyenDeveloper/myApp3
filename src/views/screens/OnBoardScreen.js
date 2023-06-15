@@ -34,7 +34,7 @@ const OnBoardScreen = ({navigation}) => {
         }}>
         <Pressable
           onPress={() => {
-            navigation.navigate('HomeScreen');
+            navigation.navigate('Trang chủ');
             // navigation.dispatch(StackActions.replace('HomeScreen'));
           }}>
           <View style={style.btn}>

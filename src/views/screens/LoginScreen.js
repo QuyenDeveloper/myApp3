@@ -16,7 +16,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PORT from '../../consts/port';
 
-const LoginPage = ({onLoginSuccess}) => {
+const LoginPage = ({loginStatic}) => {
   const navigation = useNavigation();
   const RegisterBtn = () => {
     navigation.navigate('RegisterScreen');
@@ -35,14 +35,14 @@ const LoginPage = ({onLoginSuccess}) => {
         username,
         password,
       });
-      console.log(response.data);
+      // console.log(response.data);
       if (response.data.success) {
         const token = response.data.token;
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         // Store the token securely
         await AsyncStorage.setItem('token', token);
         // Call the onLoginSuccess function or navigate to the desired screen
-        onLoginSuccess({token});
+        loginStatic(true);
       } else {
         // Display error message if login fails
         Alert.alert('Login Failed', 'Invalid username or password');
@@ -67,11 +67,11 @@ const LoginPage = ({onLoginSuccess}) => {
             <View style={styles.bodyTop}>
               {/* nhap ten tai khoan */}
               <View>
-                <Text style={styles.userNameLabel}>Tên tài khoản</Text>
+                <Text style={styles.userNameLabel}>Email</Text>
                 <View style={styles.nameInputWrap}>
                   <FontAwesome5 name="user" color="black" style={styles.icon} />
                   <TextInput
-                    placeholder="Nhập tên tài khoản"
+                    placeholder="Nhập email"
                     style={{flex: 1}}
                     value={username}
                     onChangeText={text => setUsername(text)}

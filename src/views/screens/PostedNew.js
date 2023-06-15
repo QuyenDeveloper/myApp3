@@ -236,9 +236,9 @@ const PostedNew = ({navigation}) => {
             />
           </View>
 
-          <View style={style.sortBtn}>
+          {/* <View style={style.sortBtn}>
             <Icon name="tune" color={COLORS.white} size={25} />
-          </View>
+          </View> */}
         </View>
 
         {/* <ListCategories /> */}

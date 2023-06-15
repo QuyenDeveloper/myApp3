@@ -12,7 +12,7 @@ import PORT from '../consts/port';
 const CustomDrawed = props => {
   useEffect(() => {
     setAvatar();
-  }, []);
+  }, [avatarSource]);
   const [avatarSource, setAvatarSource] = useState(null);
   const setAvatar = async () => {
     try {
@@ -29,7 +29,9 @@ const CustomDrawed = props => {
         if (!response.data.success) {
           console.log(response.data.success);
           await AsyncStorage.removeItem('token');
-          setAvatarSource(require('../assets/person.jpg'));
+          setAvatarSource({
+            uri: `${PORT.BASE_URL}/api/getUserAvatar/DefaultAvt.jpg`,
+          });
         } else {
           const response2 = await axios.get(
             `${PORT.BASE_URL}/api/getUserAvartarName`,
@@ -46,7 +48,9 @@ const CustomDrawed = props => {
         }
       } else {
         console.log('Token not found in AsyncStorage');
-        setAvatarSource(require('../assets/person.jpg'));
+        setAvatarSource({
+          uri: `${PORT.BASE_URL}/api/getUserAvatar/DefaultAvt.jpg`,
+        });
       }
     } catch (error) {
       console.log('Error fetching data:', error);

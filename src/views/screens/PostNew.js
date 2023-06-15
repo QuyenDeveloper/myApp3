@@ -20,7 +20,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import COLORS from '../../consts/colors';
 import {SelectList} from 'react-native-dropdown-select-list';
 // import ImagePicker from 'react-native-image-crop-picker';
-import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
+import {launchImageLibrary} from 'react-native-image-picker';
 import {ScrollView} from 'react-native-gesture-handler';
 import LinearGradient from 'react-native-linear-gradient';
 import axios from 'axios';
@@ -38,6 +38,9 @@ const PostNew = ({navigation}) => {
   const [quanSelected, setQuanSelected] = useState('');
   const [huyenSelected, setHuyenSelected] = useState('');
   const [images, setImages] = useState('');
+  const [images2, setImages2] = useState('');
+  const [images3, setImages3] = useState('');
+  const [images4, setImages4] = useState('');
   const [quanData, setQuanData] = useState([]);
   const [huyenData, setHuyenData] = useState([]);
   const [filteredHuyenData, setfilteredHuyenData] = useState([]);
@@ -91,19 +94,16 @@ const PostNew = ({navigation}) => {
     }
   };
 
-  const chooseImage = async () => {
+  const chooseImage = async a => {
     const options = {
-      multiple: true,
       compressImageQuality: 0.3,
-      maxFiles: 4,
       mediaType: 'photo',
       includeBase64: true,
     };
     const result = await launchImageLibrary(options);
     if (!result.didCancel && !result.error) {
       const selectedImages = result.assets.map(asset => asset.uri);
-      setImages(selectedImages);
-      console.log(selectedImages);
+      a(selectedImages);
     }
   };
   const handleSubmit = async () => {
@@ -120,6 +120,33 @@ const PostNew = ({navigation}) => {
         };
         formData.append('image', image);
       });
+      images2.forEach((uri, index) => {
+        const imageName = path.basename(uri);
+        const image = {
+          uri: uri,
+          type: 'image/jpeg',
+          name: imageName,
+        };
+        formData.append('image2', image);
+      });
+      images3.forEach((uri, index) => {
+        const imageName = path.basename(uri);
+        const image = {
+          uri: uri,
+          type: 'image/jpeg',
+          name: imageName,
+        };
+        formData.append('image3', image);
+      });
+      images4.forEach((uri, index) => {
+        const imageName = path.basename(uri);
+        const image = {
+          uri: uri,
+          type: 'image/jpeg',
+          name: imageName,
+        };
+        formData.append('image4', image);
+      });
 
       // Append other form data to the formData object
       formData.append('tieude', tieudeInputed);
@@ -129,7 +156,6 @@ const PostNew = ({navigation}) => {
       formData.append('mota', moTaInputed);
       formData.append('quan', quanSelected);
       formData.append('huyen', huyenSelected);
-
       try {
         const response = await axios.post(
           `${PORT.BASE_URL}/api/upload`,
@@ -292,9 +318,62 @@ const PostNew = ({navigation}) => {
             </View>
             <View>
               <Text>Chọn ảnh</Text>
-              <TouchableOpacity onPress={chooseImage} style={styles.button}>
+              <TouchableOpacity
+                onPress={() => chooseImage(setImages)}
+                style={styles.button}>
                 {images != '' ? (
                   images.map((uri, index) => (
+                    <Image
+                      key={index}
+                      source={{uri: uri}}
+                      style={styles.image}
+                    />
+                  ))
+                ) : (
+                  <Text style={[styles.text, styles.textInputBorder]}>
+                    Chọn ảnh
+                  </Text>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => chooseImage(setImages2)}
+                style={styles.button}>
+                {images2 != '' ? (
+                  images2.map((uri, index) => (
+                    <Image
+                      key={index}
+                      source={{uri: uri}}
+                      style={styles.image}
+                    />
+                  ))
+                ) : (
+                  <Text style={[styles.text, styles.textInputBorder]}>
+                    Chọn ảnh
+                  </Text>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => chooseImage(setImages3)}
+                style={styles.button}>
+                {images3 != '' ? (
+                  images3.map((uri, index) => (
+                    <Image
+                      key={index}
+                      source={{uri: uri}}
+                      style={styles.image}
+                    />
+                  ))
+                ) : (
+                  <Text style={[styles.text, styles.textInputBorder]}>
+                    Chọn ảnh
+                  </Text>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => chooseImage(setImages4)}
+                style={styles.button}>
+                {images4 != '' ? (
+                  images4.map((uri, index) => (
                     <Image
                       key={index}
                       source={{uri: uri}}
@@ -376,9 +455,11 @@ const styles = StyleSheet.create({
     flex: 1,
     marginTop: 10,
     marginBottom: 10,
-    height: 200,
     borderWidth: 1,
     borderColor: COLORS.black,
+    width: '100%',
+    height: 120,
+    borderRadius: 15,
   },
   header: {
     paddingTop: 50,

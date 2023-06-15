@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   SafeAreaView,
   View,
@@ -12,13 +12,59 @@ import {
   Pressable,
   ScrollView,
   Button,
+  RefreshControl,
 } from 'react-native';
 import COLORS from '../../consts/colors';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import houses from '../../consts/houses';
+import axios from 'axios';
+import PORT from '../../consts/port';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const {width} = Dimensions.get('screen');
 const SavedNews = ({navigation}) => {
+  const [postList, setPostList] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+  useEffect(() => {
+    retrievePosts();
+  }, []);
+  const onRefresh = () => {
+    setRefreshing(true);
+    retrievePosts();
+    setRefreshing(false);
+  };
+  const retrievePosts = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const response = await axios.get(`${PORT.BASE_URL}/api/getLikedPost`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setPostList(response.data);
+    } catch (error) {
+      console.log(error + 'here');
+    }
+  };
+
+  const huyLuuBtn = async id => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const response = await axios.post(
+        `${PORT.BASE_URL}/api/removeLikePost`,
+        {prd_id: id},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+    } catch (error) {
+      console.log(error);
+    }
+    retrievePosts();
+  };
+
   const optionsList = [
     {title: 'Buy a Home', img: require('../../assets/house1.jpg')},
     {title: 'Rent a Home', img: require('../../assets/house2.jpg')},
@@ -83,13 +129,16 @@ const SavedNews = ({navigation}) => {
         onPress={() => navigation.navigate('DetailsScreen', house)}>
         <View style={style.card}>
           {/* House image */}
-          <Image source={house.image} style={style.cardImage} />
+          <Image
+            source={{uri: `${PORT.BASE_URL}/api/getImage/` + house.img}}
+            style={style.cardImage}
+          />
 
           <View style={{marginTop: 10}}>
             {/* //Title text */}
             <Text
               style={{fontSize: 16, fontWeight: 'bold', color: COLORS.dark}}>
-              {house.title}
+              {house.prd_title}
             </Text>
 
             <View
@@ -100,14 +149,13 @@ const SavedNews = ({navigation}) => {
               }}>
               {/* Location text */}
               <Text style={{color: COLORS.grey, fontSize: 14, marginTop: 5}}>
-                {house.location}
-              </Text>
-
-              <Text
-                style={{fontWeight: 'bold', color: COLORS.green, fontSize: 16}}>
-                {house.price} tr/Tháng
+                {house.ward + ', ' + house.district_name}
               </Text>
             </View>
+            <Text
+              style={{fontWeight: 'bold', color: COLORS.green, fontSize: 16}}>
+              {house.price.toLocaleString()} VND/Tháng
+            </Text>
           </View>
           <View
             style={{
@@ -121,7 +169,8 @@ const SavedNews = ({navigation}) => {
               style={({pressed}) => [
                 {backgroundColor: pressed ? COLORS.red : COLORS.green},
                 style.deleteButton,
-              ]}>
+              ]}
+              onPress={() => huyLuuBtn(house.prd_id)}>
               <Text
                 style={{
                   color: COLORS.white,
@@ -181,9 +230,9 @@ const SavedNews = ({navigation}) => {
             />
           </View>
 
-          <View style={style.sortBtn}>
+          {/* <View style={style.sortBtn}>
             <Icon name="tune" color={COLORS.white} size={25} />
-          </View>
+          </View> */}
         </View>
 
         {/* <ListCategories /> */}
@@ -191,9 +240,12 @@ const SavedNews = ({navigation}) => {
         {/* Render Card */}
 
         <FlatList
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
           snapToInterval={width - 20}
           contentContainerStyle={{paddingLeft: 20, paddingVertical: 20}}
-          data={houses}
+          data={postList}
           renderItem={({item}) => <Card house={item} />}
           flexGrow={1}
           flexShrink={1}

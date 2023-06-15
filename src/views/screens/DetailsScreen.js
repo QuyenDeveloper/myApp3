@@ -31,7 +31,7 @@ const DetailsScreen = ({navigation, route}) => {
       const token = await AsyncStorage.getItem('token');
       if (token) {
         const response = await axios.get(
-          `${PORT.BASE_URL}/api/getLikedPost?prd_id=${house.prd_id}`,
+          `${PORT.BASE_URL}/api/checkLikedPost?prd_id=${house.prd_id}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

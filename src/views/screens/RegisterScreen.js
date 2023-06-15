@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
   Keyboard,
   StyleSheet,
@@ -11,7 +11,54 @@ import {
 import COLORS from '../../consts/colors';
 import LinearGradient from 'react-native-linear-gradient';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
-export default function RegisterView() {
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import PORT from '../../consts/port';
+import {Alert} from 'react-native-windows';
+export default function RegisterView({navigation}) {
+  const [email, setEmail] = useState('');
+  const [ten, setTen] = useState('');
+  const [matkhau, setMatkhau] = useState('');
+  const [xnmatkhau, setxnMatkhau] = useState('');
+
+  const handleDangKy = async () => {
+    if (matkhau === xnmatkhau) {
+      try {
+        // const response = await axios.post(`${PORT.BASE_URL}/api/register`, {
+        //   email,
+        //   ten,
+        //   matkhau,
+        // });
+        try {
+          const response = await axios.post(`${PORT.BASE_URL}/api/login`, {
+            username: email,
+            password: matkhau,
+          });
+          if (response.data.success) {
+            const token = response.data.token;
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            // Store the token securely
+            await AsyncStorage.setItem('token', token);
+            navigation.navigate('Thông tin cá nhân', {loginStatic: true});
+          } else {
+            // Display error message if login fails
+            Alert.alert('Login Failed', 'Invalid username or password');
+          }
+        } catch (error) {
+          console.log(error);
+          Alert.alert(
+            'Error',
+            'An error occurred during login' + error.message,
+          );
+        }
+      } catch (error) {
+        console.log('Error fetching data:', error);
+      }
+    } else {
+      Alert.alert('Sai thông tin', 'Nhập lại mật khẩu');
+    }
+  };
+
   return (
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
       <View style={styles.outerViewContainer}>
@@ -26,16 +73,27 @@ export default function RegisterView() {
             <View style={styles.bodyTop}>
               {/* ten tai khoan */}
               <View>
-                <Text style={styles.userNameLabel}>Tên tài khoản</Text>
+                <Text style={styles.userNameLabel}>Email</Text>
                 <View style={styles.nameInputWrap}>
                   <FontAwesome5 name="user" color="black" style={styles.icon} />
                   <TextInput
-                    placeholder="Nhập tên tài khoản"
+                    placeholder="Nhập email"
                     style={{flex: 1}}
+                    onChangeText={setEmail}
                   />
                 </View>
               </View>
-
+              <View>
+                <Text style={styles.userNameLabel}>Tên</Text>
+                <View style={styles.nameInputWrap}>
+                  <FontAwesome5 name="user" color="black" style={styles.icon} />
+                  <TextInput
+                    placeholder="Nhập tên"
+                    style={{flex: 1}}
+                    onChangeText={setTen}
+                  />
+                </View>
+              </View>
               {/* mat khau */}
               <View>
                 <Text style={styles.passwordLabel}>Mật khẩu</Text>
@@ -45,6 +103,19 @@ export default function RegisterView() {
                     placeholder="Nhập mật khẩu"
                     secureTextEntry
                     style={{flex: 1}}
+                    onChangeText={setMatkhau}
+                  />
+                </View>
+              </View>
+              <View>
+                <Text style={styles.passwordLabel}>Xác nhận mật khẩu</Text>
+                <View style={styles.passwordInputWrap}>
+                  <FontAwesome5 name="lock" color="black" style={styles.icon} />
+                  <TextInput
+                    placeholder="Nhập lại mật khẩu"
+                    secureTextEntry
+                    style={{flex: 1}}
+                    onChangeText={setxnMatkhau}
                   />
                 </View>
               </View>
@@ -56,7 +127,9 @@ export default function RegisterView() {
             <View style={styles.bodyBottom}>
               {/* nut dang nhap */}
               <View style={styles.loginBtnWrap}>
-                <TouchableOpacity style={styles.loginBtn}>
+                <TouchableOpacity
+                  style={styles.loginBtn}
+                  onPress={handleDangKy}>
                   <LinearGradient
                     colors={['#0FA914', '#6DF755']}
                     style={styles.linearGradient}
